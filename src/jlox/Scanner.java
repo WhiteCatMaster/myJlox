@@ -61,12 +61,69 @@ class Scanner
             case '>':
                 addToken(match('=') ? GREATER_EQUAL : GREATER);
                 break;
+            case '/':
+                if (match('/'))
+                {
+                    while (peek() != '\n' && !isAtEnd()) advance();
+                }
+                else
+                {
+                    addToken(SLASH);
+                }
+                break;
+            case ' ':
+            case '\r':
+            case '\t':
+                line++;
+                break;
+
+            case '"': string();break;
 
             default:
-                Lox.error(line, "Unexpected character.");
+                if (isDigit(c))
+                {
+                    number();
+                }
+                else
+                {
+                    Lox.error(line, "Unexpected character.");
+                }
+
                 break;
+
+
         }
     }
+    private void numer()
+    {
+        while(isDigit(peek())) advance();
+
+        if(peek() == '.' && isDigit(peekNext()))
+        {
+            advance();
+            while (isDigit(peek()));
+        }
+        addToken(NUMBER,
+                Double.parseDouble(source.substring(start, current)));
+    }
+    private void string()
+    {
+        while (peek() != '"' && !isAtEnd())
+        {
+            if (peek() == '\n') line++;
+            advance();
+        }
+        if (isAtEnd())
+        {
+            Lox.error(line, "Unterminated string.");
+            return;
+        }
+        advance();
+
+        String value = source.substring(start +1 , current -1);
+        addToken(STRING, value);
+    }
+
     private boolean match(char expected)
     {
         if (isAtEnd()) return false;
@@ -74,6 +131,15 @@ class Scanner
 
         current ++;
         return true;
+    }
+    private char peek()
+    {
+        if (isAtEnd()) return '\0';
+        return source.charAt(current);
+    }
+    private boolean isDigit(char c )
+    {
+        return c >= '0' && c <= '9';
     }
     private char advance()
     {
@@ -88,6 +154,11 @@ class Scanner
     {
         String text = source.substring(start, current);
         tokens.add(new Token(type, text, literal, line));
+    }
+    private char peekNext()
+    {
+        if ( current + 1 >= source.length()) return '\0';
+        return source.charAt(current +1);
     }
 }
 
